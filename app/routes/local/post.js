@@ -3,31 +3,40 @@ const knex = require('../../knex');
 
 export default async (req, res, next) => {
   try {
-    //const db = await Promise.resolve(connection());
-    //const Local = db.models.local;
     var data;
-	    if (req.body) {
+	    if (Array.isArray(req.body)) {	    	
 				await knex.transaction(function(trx) {
 
-				var local = {
-				  ...req.body,
-				  last_update: new Date(),
-				  created_at: new Date()
-				};
+					var locals = req.body.map(function(local) {
 
-				knex.insert(local)
-			    .into('local')
-			    .transacting(trx)
-			    .then(function(ids) {
-						return ids
-			   }).then(trx.commit).catch(trx.rollback);
-			}).then(function(inserts) {
-				data = 'New Local Saved'
-			  console.log('New Local saved.');
-			}).catch(function(error) {
-			  console.error(error);
-			});
-		}
+						return  {
+						  ...local,
+						  last_update: new Date(),
+						  created_at: new Date()
+						};
+					});
+					console.log(locals)
+				  knex.insert()
+				    .into('local')
+				    .transacting(trx)
+				    .then(function(ids) {
+				      return locals.map(function(local) {
+				        return knex.insert(local).into('local').transacting(trx);
+				      });
+				    })
+				    .then(trx.commit)
+				    .catch(trx.rollback);
+				})
+				.then(function(inserts) {
+					data = `${inserts.length}  new locals saved.`
+				  console.log(inserts.length + ' new locals saved.');
+				})
+				.catch(function(error) {
+				  console.error(error);
+				});
+			}else{
+				 throw "Request Body is not an array!";
+			}
 
     const result = {
       ...response,
