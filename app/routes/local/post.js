@@ -8,19 +8,19 @@ export default async (req, res, next) => {
 				await knex.transaction(function(trx) {
 
 					var locals = req.body.map(function(local) {
-
 						return  {
 						  ...local,
 						  last_update: new Date(),
 						  created_at: new Date()
 						};
 					});
-					console.log(locals)
-				  knex.insert()
+
+				  knex.insert(locals)
 				    .into('local')
 				    .transacting(trx)
 				    .then(function(ids) {
 				      return locals.map(function(local) {
+				      	 // Some validation could take place here.
 				        return knex.insert(local).into('local').transacting(trx);
 				      });
 				    })
